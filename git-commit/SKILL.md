@@ -1,127 +1,33 @@
 ---
 name: git-commit
-description: 'Use this skill when the user wants to make a Git commit or split changes into more than one commit. Also use it when the user types "/commit" or asks for a conventional commit. The skill examines the diff, stages the related files, writes a Conventional Commits message, and runs git commit. Do not use it when the user wants only a commit message and no commit. Do not use it to push, open a pull request, rebase, or change the commit history.'
-license: MIT
-compatibility: 'Requires Git. The `--resolved` option of `git add` requires Git 2.56 or later.'
+description: Git commit with auto-generated message. Use when the user says "提交", "commit", "git commit", or "git:commit". Do not use when the user only wants a commit message without committing, or to push, open a PR, rebase, or rewrite history.
 allowed-tools: shell(git:*)
 ---
 
-# Git Commit with Conventional Commits
+## Instructions
 
-Make Git commits that follow the [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) specification. Get the type, the scope, and the summary from the diff.
+1. Read repo rules: commitlint config (`commitlint.config.*`, `.commitlintrc*`), `CONTRIBUTING.md`, and `git log --oneline -5`. Repo rules override this skill
+2. Run `git status --porcelain`, `git diff --staged`, `git diff` to understand all changes. If there are no changes, tell the user — do not make an empty commit
+3. One logical change per commit. If changes are unrelated, split into multiple commits. Unstage unrelated files with `git reset -q -- <file>`
+4. Stage only the relevant files by name (do NOT use `git add -A` / `git add .`; do NOT use interactive `git add -p` / `-i`; quote globs like `'*.test.*'`)
+5. Check `git diff --staged --name-only` — never commit `.env`, credentials, or private keys
+6. Commit with one `-m` per paragraph (works in Bash and PowerShell): `git commit -m "主题" -m "正文"`
+7. Verify with `git log -1 --stat` and `git status --porcelain`
 
-## Message Format
+## Commit message rules
 
-```text
-<type>(<scope>): <summary>
+- **始终使用中文撰写提交信息**（无论最近提交是什么语言）
+- Subject line: **50 chars or less**. State WHAT changed, not HOW.
+- If multiple files changed for the same purpose, summarize the purpose — don't list files
+- Body (optional): only when the subject alone is ambiguous. Max 2 lines, focus on WHY
+- No scope prefixes (feat/fix/chore) unless the repo already uses them (log or commitlint)
+- **禁止添加 Claude 署名**（`Co-Authored-By: Claude ...` 等 trailer），即使最近提交里有也不要模仿
 
-<body>
+**Bad:** `更新用户认证模块以处理令牌刷新的边界情况并增加错误日志`
+**Good:** `修复令牌刷新边界情况`
 
-<footer>
-```
+## Safety
 
-- The scope, the body, and the footer are optional. Without a scope, write `<type>: <summary>`.
-- Write the summary and body in Chinese. Keep the Conventional Commits type, scope, and required footer tokens in their standard form; preserve identifiers, paths, and proper nouns when needed.
-- Keep the first line at 72 characters or less. Do not put a period at the end.
-- In the body, explain in Chinese what changed and why.
-- Write each footer as `Token: value` or `Token #value`, for example `Refs: #456` or `Closes #123`. Conventional Commits accepts the two forms, but Git reads only `Token: value` as a trailer. In a token, use `-` in place of a space. Write any descriptive footer value in Chinese.
-
-## Types
-
-Conventional Commits defines only `feat` and `fix`. The other types come from the Angular convention ([`@commitlint/config-conventional`](https://github.com/conventional-changelog/commitlint/tree/master/%40commitlint/config-conventional)). If the repository has its own list, use that list.
-
-| Type       | Use it for                                     |
-| ---------- | ---------------------------------------------- |
-| `feat`     | A new feature                                  |
-| `fix`      | A bug fix                                      |
-| `docs`     | Documentation only                             |
-| `style`    | Formatting only, with no change to the logic   |
-| `refactor` | A code change that is not a feature or a fix   |
-| `perf`     | A performance improvement                      |
-| `test`     | New or changed tests                           |
-| `build`    | The build system or the dependencies           |
-| `ci`       | The CI configuration                           |
-| `chore`    | Other maintenance                              |
-| `revert`   | A revert of an earlier commit                  |
-
-## Breaking Changes
-
-Put `!` before the colon, or add a `BREAKING CHANGE:` footer. Write the token in uppercase. `BREAKING-CHANGE:` is also correct.
-
-```text
-feat(api)!: 移除 v1 接口
-
-BREAKING CHANGE: 客户端必须改用 v2 接口。
-```
-
-## Workflow
-
-### 1. Read the repository rules
-
-Find the commit rules before you write a message:
-
-- A commitlint configuration, for example `commitlint.config.js` or `.commitlintrc.json`.
-- `CONTRIBUTING.md`.
-- The recent messages: `git log --oneline -10`.
-
-If a repository rule is different from this skill, use the repository rule.
-
-### 2. Examine the changes
-
-```bash
-git status --porcelain
-git diff --staged
-git diff
-```
-
-If there are no changes, tell the user. Do not make an empty commit.
-
-### 3. Stage the files
-
-Put one logical change in each commit. If the staged files contain more than one change, first unstage the files of the other changes. Then stage the files for this change:
-
-```bash
-git reset -q -- path/to/other-file1 path/to/other-file2
-git add -- path/to/file1 path/to/file2
-git add -- '*.test.*'
-git add -- src/components/
-```
-
-- Put a glob in quotes. Without quotes, the shell expands the glob and does not find the files in subdirectories.
-- Do not use `git add -p` or `git add -i`. These commands wait for input from a person.
-- After you resolve a merge conflict, use `git add --resolved`. This command stages only the resolved files. If a file still has conflict markers, the command stops.
-- Examine the list of staged files with `git diff --staged --name-only`. Do not commit secrets, for example `.env` files, `credentials.json`, or private keys.
-
-### 4. Write the message
-
-Get each part from the diff:
-
-- **Type**: The kind of change.
-- **Scope**: The module or the area that the change affects.
-- **Summary**: What changed, in one line.
-
-### 5. Commit
-
-Give each paragraph with a different `-m` option. Git puts a blank line between the paragraphs. This command works in Bash, PowerShell, and other shells.
-
-```bash
-git commit -m "feat(auth): 增加令牌刷新"
-git commit -m "fix(parser): 接受空输入" -m "空文件会导致程序崩溃。" -m "Closes: #123"
-```
-
-For a long message, write the message to a temporary file. Then run `git commit -F <file>`.
-
-### 6. Make sure that the commit is correct
-
-```bash
-git log -1 --stat
-git status --porcelain
-```
-
-## Safety Rules
-
-- Do not change the Git configuration.
-- Do not use `--no-verify` unless the user tells you to. Hooks can be in `.git/hooks` or in the Git configuration.
-- If a hook fails, Git does not make the commit. Fix the problem, stage the files again, and run the same `git commit` command again. Do not use `--amend`, because it changes the previous commit.
-- Do not change the commit history unless the user tells you to. Do not use `git reset --hard`, `git rebase`, or the experimental `git history` command.
-- Do not push unless the user tells you to. Do not force push to the default branch.
+- If a hook fails, the commit did not happen: fix the issue, re-stage, re-run the same `git commit`. Do NOT use `--amend` or `--no-verify` (unless the user asks)
+- Do not change git config. Do not use `git reset --hard` or `git rebase`
+- Do not push unless the user asks. Never force push to the default branch
