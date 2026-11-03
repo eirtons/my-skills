@@ -21,10 +21,10 @@ Make Git commits that follow the [Conventional Commits 1.0.0](https://www.conven
 ```
 
 - The scope, the body, and the footer are optional. Without a scope, write `<type>: <summary>`.
-- Write the summary in the imperative mood: "add", not "added" or "adds".
+- Write the summary and body in Chinese. Keep the Conventional Commits type, scope, and required footer tokens in their standard form; preserve identifiers, paths, and proper nouns when needed.
 - Keep the first line at 72 characters or less. Do not put a period at the end.
-- In the body, tell what changed and why.
-- Write each footer as `Token: value` or `Token #value`, for example `Refs: #456` or `Closes #123`. Conventional Commits accepts the two forms, but Git reads only `Token: value` as a trailer. In a token, use `-` in place of a space.
+- In the body, explain in Chinese what changed and why.
+- Write each footer as `Token: value` or `Token #value`, for example `Refs: #456` or `Closes #123`. Conventional Commits accepts the two forms, but Git reads only `Token: value` as a trailer. In a token, use `-` in place of a space. Write any descriptive footer value in Chinese.
 
 ## Types
 
@@ -49,9 +49,9 @@ Conventional Commits defines only `feat` and `fix`. The other types come from th
 Put `!` before the colon, or add a `BREAKING CHANGE:` footer. Write the token in uppercase. `BREAKING-CHANGE:` is also correct.
 
 ```text
-feat(api)!: remove the v1 endpoints
+feat(api)!: 移除 v1 接口
 
-BREAKING CHANGE: Clients must use the v2 endpoints.
+BREAKING CHANGE: 客户端必须改用 v2 接口。
 ```
 
 ## Workflow
@@ -105,8 +105,8 @@ Get each part from the diff:
 Give each paragraph with a different `-m` option. Git puts a blank line between the paragraphs. This command works in Bash, PowerShell, and other shells.
 
 ```bash
-git commit -m "feat(auth): add token refresh"
-git commit -m "fix(parser): accept empty input" -m "An empty file caused a crash." -m "Closes: #123"
+git commit -m "feat(auth): 增加令牌刷新"
+git commit -m "fix(parser): 接受空输入" -m "空文件会导致程序崩溃。" -m "Closes: #123"
 ```
 
 For a long message, write the message to a temporary file. Then run `git commit -F <file>`.
